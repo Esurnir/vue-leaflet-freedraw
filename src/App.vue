@@ -13,7 +13,7 @@
 
 <script lang="ts">
 import 'leaflet/dist/leaflet.css';
-import { defineComponent, onBeforeMount, ref } from 'vue'
+import { defineComponent, onBeforeMount, ref } from 'vue';
 import { LMap, LTileLayer, LControl } from '@vue-leaflet/vue-leaflet';
 import type { LatLng } from 'leaflet';
 
@@ -38,9 +38,9 @@ export default defineComponent({
       initialCoordinates,
       isActive,
       flipActive,
-    }
-  }
-})
+    };
+  },
+});
 </script>
 
 <style>
