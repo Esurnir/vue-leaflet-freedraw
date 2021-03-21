@@ -6,6 +6,8 @@ import {
 import type { LatLng } from 'leaflet';
 import {
   inject,
+  nextTick,
+  onBeforeUnmount,
   onMounted,
   PropType,
   ref,
@@ -16,6 +18,7 @@ import {
 import type FreeDraw from 'leaflet-freedraw';
 import type { MarkerEvent } from 'leaflet-freedraw';
 import { debounce, isEqual } from 'lodash-es';
+import remapEvent from './utils';
 
 const ALL = 15;
 
@@ -46,7 +49,7 @@ export const setup = (
   props: FreeDrawProps,
   freeDrawRef: Ref<FreeDraw | undefined>,
   context: SetupContext,
-): Record<string, never> => {
+): { leafletObject: Ref<FreeDraw | undefined>; ready: Ref<boolean> } => {
   const { methods: layerMethods } = layerSetup(props, freeDrawRef, context);
   const options = {
     ...props.options,
@@ -113,7 +116,44 @@ export const setup = (
   onMounted(async () => {
     const { freeDraw } = await import('leaflet-freedraw');
     const freeDrawInstance = freeDraw(options);
+    if (props.modelValue) {
+      props.modelValue.forEach((poly) => {
+        freeDrawInstance.create(poly);
+      });
+    }
+    if (props.debounce) {
+      freeDrawInstance.on('markers', debounce(markerHandler, 100));
+    } else {
+      freeDrawInstance.on('markers', markerHandler);
+    }
+    const events = remapEvent(context.attrs);
+    freeDrawInstance.on(events);
+    freeDrawRef.value = freeDrawInstance;
+    if (addLayer && typeof addLayer === 'function') {
+      addLayer({
+        ...props,
+        ...layerMethods,
+        leafletObject: freeDrawInstance,
+      });
+      nextTick(() => {
+        context.emit('ready', freeDrawRef.value);
+        ready.value = true;
+      });
+    }
   });
 
-  return {};
+  onBeforeUnmount(() => {
+    if (freeDrawRef.value) {
+      freeDrawRef.value.off();
+      freeDrawRef.value.off('markers');
+      freeDrawRef.value.clear();
+      freeDrawRef.value.mode(0);
+      freeDrawRef.value.remove();
+    }
+  });
+
+  return {
+    leafletObject: freeDrawRef,
+    ready,
+  };
 };

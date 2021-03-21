@@ -1,6 +1,5 @@
-import { defineComponent, h, inject, PropType, ref } from 'vue';
+import { defineComponent, h, ref } from 'vue';
 
-import type { LatLng } from 'leaflet';
 import {
   props as freeDrawProps,
   setup as freeDrawSetup,
